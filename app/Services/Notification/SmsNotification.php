@@ -68,7 +68,7 @@ class SmsNotification implements NotificationInterface
         try {
             $this->client->request('POST', self::URI, [
                 [
-                    "Authorization" => "Bearer " . $token,
+                    'Authorization' => 'Bearer ' . $token,
                 ],
                 'json' => [
                     'body' => $message,

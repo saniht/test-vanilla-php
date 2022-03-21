@@ -4,10 +4,14 @@ declare(strict_types = 1);
 
 namespace App\Services\AppContainer;
 
+use App\Services\Notification\NotificationInterface;
 use App\Services\WeatherMonitoring\WeatherService;
+use Monolog\Logger;
+use Spatie\Valuestore\Valuestore;
 
 class CurrentService implements AppContainerInterface
 {
+    private const PROCESS_FINISH_TIME = 'finish_time';
     /**
      * @var WeatherService
      */
@@ -16,15 +20,28 @@ class CurrentService implements AppContainerInterface
      * @var string
      */
     private $city;
+    private $notification;
+    private $valuestore;
+    private $repeat;
+    private $timeOut;
+    private $logger;
 
-    /**
-     * @param WeatherService $service
-     * @param string $city
-     */
-    public function __construct(WeatherService $service, string $city)
-    {
+    public function __construct(
+        WeatherService $service,
+        NotificationInterface $notification,
+        Valuestore $valuestore,
+        Logger $logger,
+        string $city,
+        int $repeat,
+        int $timeOut
+    ) {
         $this->service = $service;
         $this->city = $city;
+        $this->notification = $notification;
+        $this->valuestore = $valuestore;
+        $this->repeat = $repeat;
+        $this->timeOut = $timeOut;
+        $this->logger = $logger;
     }
 
     /**
@@ -32,8 +49,44 @@ class CurrentService implements AppContainerInterface
      */
     public function handler(): string
     {
-        $this->service->getForecast($this->city);
+        if ($this->isProcessFinish()) {
+            $this->runCurrentApplication();
+        } else {
+            return $this->getStatus();
+        }
 
-        return 'ContainerService->handler()';
+        return 'success';
+    }
+
+    private function isProcessFinish(): bool
+    {
+        $time = $this->valuestore->get(self::PROCESS_FINISH_TIME);
+
+        if (null === $time) {
+            return true;
+        }
+
+        return (time() > $time);
+    }
+
+    public function runCurrentApplication(): void
+    {
+        $time = time();
+        $time += ($this->timeOut * 60) * $this->repeat;
+        $this->valuestore->put(self::PROCESS_FINISH_TIME, $time);
+
+        for ($i = 0; $i < $this->repeat; $i++) {
+            $this->logger->info('CurrentApplication->sent->' . $i);
+            $response = $this->service->getForecast($this->city);
+            $this->notification->send($response);
+            sleep($this->timeOut * 60);
+        }
+    }
+
+    private function getStatus(): string
+    {
+        $time = $this->valuestore->get(self::PROCESS_FINISH_TIME);
+
+        return date('y-m-d H:i:s', $time);
     }
 }
