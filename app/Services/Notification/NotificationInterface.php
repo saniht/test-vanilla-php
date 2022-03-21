@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace App\Services\WeatherMonitoring;
+namespace App\Services\Notification;
 
 use App\Services\WeatherMonitoring\DTO\WeatherForecastDTO;
 

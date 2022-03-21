@@ -1,56 +1,83 @@
 <?php
+
 declare(strict_types = 1);
 
+namespace App\Services\Notification;
+
 use App\Services\ApiClient\ApiClient;
+use App\Services\ApiClient\Exceptions\RequestApiException;
+use App\Services\ApiClient\Exceptions\SmsApiException;
+use App\Services\ApiClient\Exceptions\UnknownApiException;
 use App\Services\Messages\MessageInterface;
 use App\Services\WeatherMonitoring\DTO\WeatherForecastDTO;
-use App\Services\WeatherMonitoring\NotificationInterface;
 
-class SmsNotification implements NotificationInterface {
-
-    private const URI = "https://connect.routee.net/sms";
-    private const AUTH_URI = "https://auth.routee.net/oauth/token";
-
+class SmsNotification implements NotificationInterface
+{
+    private const URI = 'sms';
     /**
-     * @var string
+     * @var SmsNotificationSecurity
      */
-    private $apiKey;
-    private $appSecret;
+    private $security;
     /**
      * @var ApiClient
      */
     private $client;
+    /**
+     * @var MessageInterface
+     */
     private $message;
-
-
+    /**
+     * @var string
+     */
     private $from;
+    /**
+     * @var string
+     */
     private $to;
 
-    public function __construct( ApiClient $client, MessageInterface $message ,string $apiKey,string $appSecret, string $from, string $to)
-    {
-        $this->apiKey = $apiKey;
-        $this->appSecret = $appSecret;
+    /**
+     * @param ApiClient $client
+     * @param MessageInterface $message
+     * @param SmsNotificationSecurity $security
+     * @param string $from
+     * @param string $to
+     */
+    public function __construct(
+        ApiClient $client,
+        MessageInterface $message,
+        SmsNotificationSecurity $security,
+        string $from,
+        string $to
+    ) {
+        $this->security = $security;
         $this->client = $client;
         $this->from = $from;
         $this->to = $to;
         $this->message = $message;
     }
 
-
-
-
-    public function send(WeatherForecastDTO $forecastDTO):void
+    /**
+     * @param WeatherForecastDTO $forecastDTO
+     * @throws SmsApiException
+     */
+    public function send(WeatherForecastDTO $forecastDTO): void
     {
         $message = $this->message->getMessage($forecastDTO);
+        $token = $this->security->getToken();
 
-        $this->client->request('POST', self::URI,[
-            'json' => [
-                'body' => $message,
-                'to' => $this->to,
-                'from' => $this->from
-            ]]);
+        try {
+            $this->client->request('POST', self::URI, [
+                [
+                    "Authorization" => "Bearer " . $token,
+                ],
+                'json' => [
+                    'body' => $message,
+                    'to' => $this->to,
+                    'from' => $this->from
+                ]
+            ]);
+        } catch (RequestApiException | UnknownApiException $e) {
+            throw new SmsApiException('Failed to send sms');
+        }
     }
-
-
-
 }
