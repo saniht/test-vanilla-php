@@ -12,6 +12,7 @@ use App\Services\Notification\SecurityInterface;
 use App\Services\Notification\SmsNotification;
 use App\Services\Notification\SmsNotificationSecurity;
 use App\Services\WeatherMonitoring\FirstForecastService;
+use App\Services\WeatherMonitoring\WeatherService;
 use GuzzleHttp\Client;
 use GuzzleHttp\RequestOptions;
 use Monolog\Handler\StreamHandler;
@@ -22,6 +23,19 @@ use Psr\Log\LoggerInterface;
 use Spatie\Valuestore\Valuestore;
 
 return [
+    'city' => \DI\env('CITY', 'Thessaloniki'),
+    'critical_temp' => (float) \DI\env('CRITICAL_TEMP', 20),
+    'weather_url' => 'https://api.openweathermap.org/data/2.5/',
+    'weather_api_key' => 'c711ae6d6489d9386270c874a35dd8fe',
+    'sms_url' => (string)\DI\env('SMS_URL', 'https://connect.routee.net/'),
+    'sms_from' => (string)\DI\env('SMS_FROM', 'Alex'),
+    'sms_to' => (string)\DI\env('SMS_TO', '+30 6911111111'),
+    'sms_auth_url' => (string)\DI\env('SMS_AUTH_URL', 'https://auth.routee.net/'),
+    'sms_api_key' => (string)\DI\env('SMS_API_KEY', 'secret'),
+    'sms_api_secret' => (string)\DI\env('SMS_API_SECRET', 'secret'),
+    'app_repeat' => (int)\DI\env('APP_REPEAT', 10),
+    'app_repeat_timeout' => (int)\DI\env('APP_REPEAT_TIMEOUT', 10),
+
     LoggerInterface::class => function () {
         $log = new Logger('fileLogger');
         $log->pushHandler(new StreamHandler(__DIR__ . '/../storage/logs/log.log', Logger::DEBUG));
@@ -39,7 +53,7 @@ return [
 
     ClientInterface::class => DI\create(Client::class),
 
-    FirstForecastService::class => function (ContainerInterface $c) {
+    WeatherService::class => function (ContainerInterface $c) {
         $baseUrl = $c->get('weather_url');
         $apiKey = $c->get('weather_api_key');
 
@@ -103,7 +117,7 @@ return [
 
     CurrentService::class => function (ContainerInterface $c) {
         return new CurrentService(
-            $c->get(FirstForecastService::class),
+            $c->get(WeatherService::class),
             $c->get(NotificationInterface::class),
             $c->get(Valuestore::class),
             $c->get(LoggerInterface::class),
@@ -112,17 +126,4 @@ return [
             $c->get('app_repeat_timeout')
         );
     },
-
-    'city' => DI\env('CITY', 'Thessaloniki'),
-    'critical_temp' => (float)DI\env('CRITICAL_TEMP', 20),
-    'weather_url' => (string)DI\env('WEATHER_URL', 'https://api.openweathermap.org/data/2.5/'),
-    'weather_api_key' => (string)DI\env('WEATHER_API_KEY', 'c711ae6d6489d9386270c874a35dd8fe'),
-    'sms_url' => (string)DI\env('SMS_URL', 'https://connect.routee.net/'),
-    'sms_from' => (string)DI\env('SMS_FROM', 'Alex'),
-    'sms_to' => (string)DI\env('SMS_TO', '+30 6911111111'),
-    'sms_auth_url' => (string)DI\env('SMS_AUTH_URL', 'https://auth.routee.net/'),
-    'sms_api_key' => (string)DI\env('SMS_API_KEY', 'secret'),
-    'sms_api_secret' => (string)DI\env('SMS_API_SECRET', 'secret'),
-    'app_repeat' => (int)DI\env('APP_REPEAT', 2),
-    'app_repeat_timeout' => (int)DI\env('APP_REPEAT_TIMEOUT', 1),
 ];

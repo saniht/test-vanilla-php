@@ -87,6 +87,6 @@ class CurrentService implements AppContainerInterface
     {
         $time = $this->valuestore->get(self::PROCESS_FINISH_TIME);
 
-        return date('y-m-d H:i:s', $time);
+        return 'Process started and finished after : ' . date('y-m-d H:i:s', $time);
     }
 }

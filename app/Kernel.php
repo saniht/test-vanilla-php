@@ -29,14 +29,14 @@ class Kernel
      */
     public function handle(AppContainerInterface $container): string
     {
-//        try {
+        try {
             $response = $container->handler();
 
             $this->logger->info('test');
-//        } catch (Throwable $e) {
-//            //Top level handling of all exceptions in an application
-//            $response = $e->getMessage();
-//        }
+        } catch (Throwable $e) {
+            //Top level handling of all exceptions in an application
+            $response = $e->getMessage();
+        }
 
         return $response;
     }

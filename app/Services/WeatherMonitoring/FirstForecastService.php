@@ -10,9 +10,6 @@ use App\Services\WeatherMonitoring\DTO\WeatherForecastDTO;
 
 class FirstForecastService implements WeatherService
 {
-    /**
-     *
-     */
     private const URI = 'weather';
 
     /**

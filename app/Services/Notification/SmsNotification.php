@@ -62,7 +62,6 @@ class SmsNotification implements NotificationInterface
      */
     public function send(WeatherForecastDTO $forecastDTO): void
     {
-        return;//todo delete after test
         $message = $this->message->getMessage($forecastDTO);
         $token = $this->security->getToken();
 
