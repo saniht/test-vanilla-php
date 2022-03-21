@@ -5,8 +5,10 @@ declare(strict_types = 1);
 use App\Kernel;
 use App\Services\ApiClient\ApiClient;
 use App\Services\AppContainer\CurrentService;
+use App\Services\Messages\MessageInterface;
 use App\Services\Messages\MessageService;
 use App\Services\Notification\NotificationInterface;
+use App\Services\Notification\SecurityInterface;
 use App\Services\Notification\SmsNotification;
 use App\Services\Notification\SmsNotificationSecurity;
 use App\Services\WeatherMonitoring\FirstForecastService;
@@ -27,7 +29,14 @@ return [
         return $log;
     },
 
+    MessageInterface::class => function (ContainerInterface $c) {
+        $temp = $c->get('critical_temp');
+
+        return new MessageService($temp);
+    },
+
     Kernel::class => DI\autowire(),
+
     ClientInterface::class => DI\create(Client::class),
 
     FirstForecastService::class => function (ContainerInterface $c) {
@@ -45,7 +54,7 @@ return [
         return new FirstForecastService($apiKey, $client);
     },
 
-    SmsNotification::class => function (ContainerInterface $c) {
+    NotificationInterface::class => function (ContainerInterface $c) {
         $baseUrl = $c->get('sms_url');
 
         $client = new ApiClient(
@@ -58,15 +67,15 @@ return [
                        ]),
             $c->get(LoggerInterface::class)
         );
-        $messageService = $c->get(MessageService::class);
-        $smsNotificationSecurity = $c->get(SmsNotificationSecurity::class);
+        $messageService = $c->get(MessageInterface::class);
+        $security = $c->get(SecurityInterface::class);
         $from = $c->get('sms_from');
         $to = $c->get('sms_to');
 
-        return new SmsNotification($client, $smsNotificationSecurity, $messageService, $from, $to);
+        return new SmsNotification($client, $messageService, $security, $from, $to);
     },
 
-    SmsNotificationSecurity::class => function (ContainerInterface $c) {
+    SecurityInterface::class => function (ContainerInterface $c) {
         $baseUrl = $c->get('sms_auth_url');
         $apiKey = $c->get('sms_api_key');
         $appSecret = $c->get('sms_api_secret');
@@ -88,38 +97,32 @@ return [
         return new SmsNotificationSecurity($client, $valueStore, $apiKey, $appSecret);
     },
 
+    Valuestore::class => function () {
+        return Valuestore::make(__DIR__ . '/../storage/cache/cache.json');
+    },
+
     CurrentService::class => function (ContainerInterface $c) {
         return new CurrentService(
             $c->get(FirstForecastService::class),
             $c->get(NotificationInterface::class),
             $c->get(Valuestore::class),
-            $c->get(Logger::class),
+            $c->get(LoggerInterface::class),
             $c->get('city'),
             $c->get('app_repeat'),
             $c->get('app_repeat_timeout')
         );
     },
 
-    MessageService::class => function (ContainerInterface $c) {
-        $temp = $c->get('critical_temp');
-
-        return new MessageService($temp);
-    },
-
-    Valuestore::class => function () {
-        return Valuestore::make(__DIR__ . '/../storage/cache/cache.json');
-    },
-
     'city' => DI\env('CITY', 'Thessaloniki'),
     'critical_temp' => (float)DI\env('CRITICAL_TEMP', 20),
-    'weather_url' => (string) DI\env('WEATHER_URL', 'https://api.openweathermap.org/data/2.5/'),
-    'weather_api_key' => (string) DI\env('WEATHER_API_KEY', 'c711ae6d6489d9386270c874a35dd8fe'),
-    'sms_url' => (string) DI\env('SMS_URL', 'https://connect.routee.net/'),
+    'weather_url' => (string)DI\env('WEATHER_URL', 'https://api.openweathermap.org/data/2.5/'),
+    'weather_api_key' => (string)DI\env('WEATHER_API_KEY', 'c711ae6d6489d9386270c874a35dd8fe'),
+    'sms_url' => (string)DI\env('SMS_URL', 'https://connect.routee.net/'),
     'sms_from' => (string)DI\env('SMS_FROM', 'Alex'),
-    'sms_to'  => (string)DI\env('SMS_TO', '+30 6911111111'),
-    'sms_auth_url'  => (string) DI\env('SMS_AUTH_URL', 'https://auth.routee.net/'),
-    'sms_api_key' => (string)DI\env('SMS_API_KEY', ''),
-    'sms_api_secret' => (string)DI\env('SMS_API_SECRET', ''),
-    'app_repeat' => (int)DI\env('APP_REPEAT', 10),
-    'app_repeat_timeout' => (int)DI\env('APP_REPEAT_TIMEOUT', 10),
+    'sms_to' => (string)DI\env('SMS_TO', '+30 6911111111'),
+    'sms_auth_url' => (string)DI\env('SMS_AUTH_URL', 'https://auth.routee.net/'),
+    'sms_api_key' => (string)DI\env('SMS_API_KEY', 'secret'),
+    'sms_api_secret' => (string)DI\env('SMS_API_SECRET', 'secret'),
+    'app_repeat' => (int)DI\env('APP_REPEAT', 2),
+    'app_repeat_timeout' => (int)DI\env('APP_REPEAT_TIMEOUT', 1),
 ];
