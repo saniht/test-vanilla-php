@@ -12,7 +12,7 @@ use App\Services\Notification\SecurityInterface;
 use App\Services\Notification\SmsNotification;
 use App\Services\Notification\SmsNotificationSecurity;
 use App\Services\WeatherMonitoring\FirstForecastService;
-use App\Services\WeatherMonitoring\WeatherService;
+use App\Services\WeatherMonitoring\WeatherServiceInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\RequestOptions;
 use Monolog\Handler\StreamHandler;
@@ -53,7 +53,7 @@ return [
 
     ClientInterface::class => DI\create(Client::class),
 
-    WeatherService::class => function (ContainerInterface $c) {
+    WeatherServiceInterface::class => function (ContainerInterface $c) {
         $baseUrl = $c->get('weather_url');
         $apiKey = $c->get('weather_api_key');
 
@@ -117,7 +117,7 @@ return [
 
     CurrentService::class => function (ContainerInterface $c) {
         return new CurrentService(
-            $c->get(WeatherService::class),
+            $c->get(WeatherServiceInterface::class),
             $c->get(NotificationInterface::class),
             $c->get(Valuestore::class),
             $c->get(LoggerInterface::class),

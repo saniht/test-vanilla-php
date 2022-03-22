@@ -5,7 +5,7 @@ declare(strict_types = 1);
 namespace App\Services\AppContainer;
 
 use App\Services\Notification\NotificationInterface;
-use App\Services\WeatherMonitoring\WeatherService;
+use App\Services\WeatherMonitoring\WeatherServiceInterface;
 use Monolog\Logger;
 use Spatie\Valuestore\Valuestore;
 
@@ -13,7 +13,7 @@ class CurrentService implements AppContainerInterface
 {
     private const PROCESS_FINISH_TIME = 'finish_time';
     /**
-     * @var WeatherService
+     * @var WeatherServiceInterface
      */
     private $service;
     /**
@@ -27,7 +27,7 @@ class CurrentService implements AppContainerInterface
     private $logger;
 
     public function __construct(
-        WeatherService $service,
+        WeatherServiceInterface $service,
         NotificationInterface $notification,
         Valuestore $valuestore,
         Logger $logger,

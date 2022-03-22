@@ -6,7 +6,7 @@ namespace App\Services\WeatherMonitoring;
 
 use App\Services\WeatherMonitoring\DTO\WeatherForecastDTO;
 
-interface WeatherService
+interface WeatherServiceInterface
 {
     public function getForecast(string $city): WeatherForecastDTO;
 }
